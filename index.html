@@ -652,7 +652,7 @@ header p{margin-top:4px;opacity:.85;font-size:.87em;}
   <!-- PERSON A -->
   <div class="person-panel active" id="pp0">
     <div class="budget-summary">
-      <div class="bsum-card"><div class="label">總支出(¥)</div><div class="amount" id="totalAmtA">¥0</div><div class="sub">日幣<div class="spot-inline-desc"><span class="spot-inline-emoji">♨️</span>購買入湯手形¥1,500可泡3間旅館。穿浴衣漫步竹燈夜道最有味道。必吃：卡士達泡芙、白玉糰子。</div></div></div>
+      <div class="bsum-card"><div class="label">總支出(¥)</div><div class="amount" id="totalAmtA">¥0</div><div class="sub">日幣</div></div>
       <div class="bsum-card"><div class="label">折台幣(NT$)</div><div class="amount" id="totalTwdA">NT$0</div><div class="sub">約估</div></div>
       <div class="bsum-card"><div class="label">筆數</div><div class="amount" id="totalCntA">0</div><div class="sub">筆</div></div>
     </div>
@@ -847,7 +847,7 @@ header p{margin-top:4px;opacity:.85;font-size:.87em;}
 <!-- PACKING -->
 <div id="packing" class="section">
   <div class="card"><h4>🧳 打包進度</h4>
-    <div class="prog-bar-wrap"><div class="prog-bar" id="progBar" style="width:0%"><div class="spot-inline-desc"><span class="spot-inline-emoji">🏯</span>日本三大名城，¥800。特別見學通路可看震後重建工程，非常感人。加藤神社是最佳拍攝角度。</div></div></div>
+    <div class="prog-bar-wrap"><div class="prog-bar" id="progBar" style="width:0%"></div></div>
     <div class="prog-text" id="progText">0 / 0 件已確認</div>
   </div>
   <div id="packingList"></div>
@@ -1626,6 +1626,7 @@ window.addEventListener('DOMContentLoaded', function() {
   try { renderPacking(); }    catch(e){ console.warn('packing',e); }
   try { renderPhrases(); }    catch(e){ console.warn('phrases',e); }
   try { renderHistory(); }    catch(e){ console.warn('history',e); }
+  try { initMustList(); }     catch(e){ console.warn('mustList',e); }
   try { renderSV('A'); }      catch(e){ console.warn('svA',e); }
   try { renderSV('B'); }      catch(e){ console.warn('svB',e); }
   try { initSpots(); }        catch(e){ console.warn('spots',e); }
@@ -1956,67 +1957,269 @@ const defaultMust={
   ]
 };
 let mustData=JSON.parse(localStorage.getItem('kyushu_must_v4')||JSON.stringify(defaultMust));
-function saveMust(){localStorage.setItem('kyushu_must_v4',JSON.stringify(mustData));}
-let curMustTab='buy';
+// ══════════════════════════════════════════
+// MUST-LIST V2
+// ══════════════════════════════════════════
+const defaultMust2 = {
+  buy:{
+    名產:[
+      {name:'明太子仙貝（めんべい）',price:'¥600~',where:'博多站・天神・機場',day:'D1/D9',desc:'百年老舖福太郎出品，辛子明太子風味香脆，口味多樣',emoji:'🦀',img:'',imgKeyword:'めんべい明太子仙貝 福岡',done:false,custom:false},
+      {name:'YAMAYA軟管明太子醬',price:'¥300~',where:'福岡超市・唐吉軻德',day:'D1/D9',desc:'牙膏裝超方便，拌飯拌麵都好吃，台灣買不到',emoji:'🌶️',img:'',imgKeyword:'YAMAYA やまや チューブ明太子',done:false,custom:false},
+      {name:'博多通りもん',price:'¥600/6個',where:'博多站・機場',day:'D1/D9',desc:'連續24年金賞！白豆沙鮮奶油麥芽糖，口感細緻滑順',emoji:'🍡',img:'',imgKeyword:'博多通りもん 明月堂',done:false,custom:false},
+      {name:'PRESS BUTTER SAND 甘王草莓',price:'¥1,400/6個',where:'博多站・天神',day:'D1/D9',desc:'福岡限定！甘王草莓焦糖奶油夾心餅乾，排隊限量',emoji:'🍓',img:'',imgKeyword:'PRESS BUTTER SAND 博多 甘王草莓',done:false,custom:false},
+      {name:'筑紫麻糬',price:'¥1,800~',where:'如水庵・博多站',day:'D1/D9',desc:'黃豆粉黑糖蜜軟麻糬，Monde Selection最高金獎7連霸',emoji:'🍡',img:'',imgKeyword:'筑紫もち 如水庵',done:false,custom:false},
+      {name:'小雞饅頭（ひよ子）',price:'¥650/5個',where:'博多站・機場',day:'D1/D9',desc:'吉野堂超可愛小雞造型，蛋黃豆沙餡，福岡代表伴手禮',emoji:'🐥',img:'',imgKeyword:'ひよ子 吉野堂',done:false,custom:false},
+      {name:'柚子胡椒',price:'¥400~',where:'由布院湯之坪・各地',day:'D4',desc:'九州特產辛香調味料，拌肉鍋物點睛之筆',emoji:'🟡',img:'',imgKeyword:'柚子胡椒 九州',done:false,custom:false},
+      {name:'一蘭拉麵禮盒',price:'¥900/5包',where:'博多站・機場免稅',day:'D1/D9',desc:'台灣售價的一半，豚骨湯底附贈調味包',emoji:'🍜',img:'',imgKeyword:'一蘭 ラーメン 土産',done:false,custom:false},
+      {name:'茅乃舍高湯包',price:'¥1,080/8袋',where:'天神 岩田屋B2',day:'D9',desc:'日本頂級高湯包，台灣也有但日本便宜30%',emoji:'🍲',img:'',imgKeyword:'茅乃舍だし 高湯包',done:false,custom:false},
+      {name:'熊本熊周邊商品',price:'¥500~',where:'Sakura Machi・熊本站',day:'D5',desc:'官方正版熊本熊毛絨玩具・環保袋・文具',emoji:'🐻',img:'',imgKeyword:'くまモン グッズ',done:false,custom:false},
+    ],
+    保健:[
+      {name:'LULU綜合感冒藥',price:'¥780',where:'各大藥妝店',day:'任意',desc:'第一三共出品，頭痛鼻塞發冷多效合一',emoji:'💊',img:'',imgKeyword:'ルル 総合感冒薬',done:false,custom:false},
+      {name:'太田胃散',price:'¥700~',where:'各大藥妝店',day:'任意',desc:'旅行吃太多的救星，日本行必備',emoji:'🩺',img:'',imgKeyword:'太田胃散',done:false,custom:false},
+      {name:'參天FX NEO眼藥水',price:'¥800~',where:'松本清・大國藥妝',day:'任意',desc:'超涼一滴入魂，開車・手機疲勞時必備',emoji:'👁️',img:'',imgKeyword:'参天FX NEO 目薬',done:false,custom:false},
+      {name:'花王蒸氣眼罩',price:'¥1,200/12片',where:'唐吉軻德・松本清',day:'任意',desc:'溫熱蒸氣舒緩眼壓，飛機上或泡完溫泉超享受',emoji:'😌',img:'',imgKeyword:'花王 めぐりズム 蒸気アイマスク',done:false,custom:false},
+      {name:'Bioré UV防曬乳',price:'¥878/70ml',where:'各大藥妝店',day:'任意',desc:'清爽不黏膩可當隔離，日本必買防曬神品',emoji:'☀️',img:'',imgKeyword:'Bioré UV アクアリッチ',done:false,custom:false},
+      {name:'休足時間腿部冷敷貼',price:'¥700/18片',where:'松本清・唐吉軻德',day:'任意',desc:'走路爬山後貼腿超舒服，旅遊必備',emoji:'🦵',img:'',imgKeyword:'休足時間 シート',done:false,custom:false},
+      {name:'ORIHIRO蒟蒻果凍',price:'¥400/6條',where:'唐吉軻德・超市',day:'任意',desc:'低卡健康零食，日本限定口味多',emoji:'🍊',img:'',imgKeyword:'ORIHIRO 蒟蒻ゼリー',done:false,custom:false},
+    ],
+    化妝:[
+      {name:'Canmake眼影盤',price:'¥770',where:'各大藥妝店',day:'任意',desc:'8色眼影性價比超高，霧面珠光全有',emoji:'✨',img:'',imgKeyword:'Canmake アイシャドウ',done:false,custom:false},
+      {name:'Melano CC維他命C精華',price:'¥900~',where:'松本清・大國藥妝',day:'任意',desc:'亮白精華，均勻膚色改善暗沉',emoji:'💧',img:'',imgKeyword:'Melano CC 美容液',done:false,custom:false},
+      {name:'DHC護唇膏',price:'¥350~',where:'各大藥妝店',day:'任意',desc:'天然橄欖精華，保濕不黏膩',emoji:'💋',img:'',imgKeyword:'DHC リップクリーム',done:false,custom:false},
+      {name:'BCL早安面膜',price:'¥1,673/32張',where:'松本清・唐吉軻德',day:'任意',desc:'60秒早安面膜，旅行超方便',emoji:'🌼',img:'',imgKeyword:'サボリーノ 早起き シートマスク',done:false,custom:false},
+      {name:'PDC酒粕面膜',price:'¥1,320/170g',where:'各藥妝',day:'任意',desc:'熊本縣河津酒・九州國產米，長效鎖水保濕',emoji:'🍶',img:'',imgKeyword:'酒粕マスク PDC',done:false,custom:false},
+    ],
+    生活:[
+      {name:'別府溫泉入浴劑',price:'¥500~',where:'別府各藥妝・湯之里',day:'D2-4',desc:'帶回家重現別府源泉，有地獄系列限定包裝',emoji:'♨️',img:'',imgKeyword:'別府温泉 入浴剤',done:false,custom:false},
+      {name:'大創DAISO雜貨',price:'¥110起',where:'各地DAISO',day:'任意',desc:'日本百元商店，旅行小物超划算',emoji:'🏠',img:'',imgKeyword:'DAISO ダイソー 日本',done:false,custom:false},
+      {name:'收納壓縮袋',price:'¥300~',where:'唐吉軻德',day:'任意',desc:'旅行收納神器，衣物壓縮省空間',emoji:'👜',img:'',imgKeyword:'圧縮袋 旅行',done:false,custom:false},
+    ],
+    自訂:[],
+  },
+  eat:{
+    福岡:[
+      {name:'博多豚骨拉麵',price:'¥900~',where:'一蘭・一風堂・博多街道',day:'D1/D9',desc:'發源地正宗豚骨白湯，細直麵，濃厚又不膩',emoji:'🍜',img:'',imgKeyword:'博多豚骨ラーメン 一蘭',done:false,custom:false},
+      {name:'中洲屋台美食',price:'¥1,000~',where:'中洲屋台街',day:'D1',desc:'露天小攤美食文化，感受博多夜生活精髓',emoji:'🏮',img:'',imgKeyword:'中洲屋台 福岡 夜',done:false,custom:false},
+      {name:'太宰府梅枝餅',price:'¥150',where:'太宰府天滿宮參道',day:'D2',desc:'現烤紅豆麻糬餅，蛋奶素可食',emoji:'🌸',img:'',imgKeyword:'梅ヶ枝餅 太宰府',done:false,custom:false},
+      {name:"I'm donut? 甜甜圈",price:'¥400',where:'天神・博多站',day:'D9',desc:'超人氣排隊甜甜圈，生麵糰質感鬆軟',emoji:'🍩',img:'',imgKeyword:"I'm donut 天神 生ドーナツ",done:false,custom:false},
+      {name:'博多水炊雞湯鍋',price:'¥2,500~',where:'博多市內餐廳',day:'D1/D9',desc:'清雞白湯涮雞肉・蔬菜，福岡代表地方料理',emoji:'🍲',img:'',imgKeyword:'博多水炊き 鶏鍋',done:false,custom:false},
+    ],
+    別府大分:[
+      {name:'地獄溫泉蛋',price:'¥100/顆',where:'別府・灶地獄',day:'D4',desc:'溫泉蒸熟，外白內黃，礦物質豐富',emoji:'🥚',img:'',imgKeyword:'地獄蒸し 温泉卵 別府',done:false,custom:false},
+      {name:'岡本屋地獄苦布丁',price:'¥350',where:'別府 岡本屋旅館',day:'D4',desc:'入口即化的微苦焦糖布丁，排隊名物',emoji:'🍮',img:'',imgKeyword:'岡本屋 地獄蒸しプリン',done:false,custom:false},
+      {name:'友永麵包屋',price:'¥100~',where:'別府市（限下午6點前）',day:'D2',desc:'別府老字號，明太子法國麵包必買',emoji:'🥐',img:'',imgKeyword:'友永パン屋 別府',done:false,custom:false},
+      {name:'杵築城下町和食',price:'¥1,000~',where:'杵築城下町',day:'D3',desc:'古武士街道沿途，豆腐・甘味・鄉土定食',emoji:'🍱',img:'',imgKeyword:'杵築城下町 和食',done:false,custom:false},
+    ],
+    由布院:[
+      {name:'湯之坪烤香菇',price:'¥400~',where:'由布院湯之坪街道',day:'D4',desc:'現烤大香菇淋醬油，完全素食，必吃小食',emoji:'🍄',img:'',imgKeyword:'由布院 湯の坪 焼きしいたけ',done:false,custom:false},
+      {name:'B-speak年輪蛋糕',price:'¥1,200~',where:'由布院B-speak本店',day:'D4',desc:'由布院最著名年輪蛋糕，奶香軟嫩',emoji:'🎂',img:'',imgKeyword:'B-speak バームクーヘン 由布院',done:false,custom:false},
+      {name:'由布院牛乳霜淇淋',price:'¥350~',where:'由布院街道各店',day:'D4',desc:'新鮮牛乳制作，濃郁奶香',emoji:'🍦',img:'',imgKeyword:'由布院 ミルクソフトクリーム',done:false,custom:false},
+      {name:'史努比茶屋甜點',price:'¥500~',where:'由布院湯之坪街道',day:'D4',desc:'史努比主題咖啡廳，可愛造型蛋糕打卡必去',emoji:'🐶',img:'',imgKeyword:'スヌーピー茶屋 由布院',done:false,custom:false},
+    ],
+    熊本阿蘇:[
+      {name:'高森田樂串烤',price:'¥1,500~',where:'高森田樂之里（建議訂位）',day:'D7',desc:'阿蘇山下爐邊炭火現烤，有素食選項',emoji:'🍢',img:'',imgKeyword:'高森田楽の里 囲炉裏',done:false,custom:false},
+      {name:'阿蘇草莓冰淇淋',price:'¥400~',where:'ASO MILK FACTORY',day:'D6',desc:'阿蘇高原新鮮草莓，酸甜濃郁現場限定',emoji:'🍓',img:'',imgKeyword:'ASO MILK FACTORY いちごソフト',done:false,custom:false},
+      {name:'黑川卡士達泡芙',price:'¥300',where:'黑川溫泉街各店',day:'D6',desc:'現做奶油泡芙，穿浴衣邊逛邊吃',emoji:'🥐',img:'',imgKeyword:'黒川温泉 シュークリーム',done:false,custom:false},
+      {name:'白玉糰子',price:'¥250~',where:'黑川溫泉街',day:'D6',desc:'Q彈白玉配抹茶紅豆，溫泉後的最佳甜點',emoji:'🍡',img:'',imgKeyword:'白玉だんご 黒川温泉',done:false,custom:false},
+      {name:'熊本馬肉料理',price:'¥2,000~',where:'熊本市內',day:'D5',desc:'九州名物馬刺身・馬肉蓋飯，熊本限定',emoji:'🐴',img:'',imgKeyword:'馬刺し 熊本',done:false,custom:false},
+    ],
+    自訂:[],
+  },
+  see:{
+    自然絕景:[
+      {name:'金鱗湖晨霧',price:'免費',where:'由布院（Day5 清晨6–7時）',day:'D5',desc:'清晨薄霧瀰漫湖面，全九州最夢幻景色',emoji:'🌅',img:'',imgKeyword:'金鱗湖 由布院 朝霧',done:false,custom:false},
+      {name:'阿蘇中岳火山口',price:'¥1,000',where:'阿蘇市（Day7）',day:'D7',desc:'世界最大規模活火山，深藍色火口湖',emoji:'🌋',img:'',imgKeyword:'阿蘇中岳 火口 青い火口湖',done:false,custom:false},
+      {name:'草千里草原',price:'含火山口',where:'阿蘇市（Day7）',day:'D7',desc:'翠綠廣闊草原配阿蘇火山，馬匹悠閒漫步',emoji:'🌿',img:'',imgKeyword:'草千里ヶ浜 阿蘇',done:false,custom:false},
+      {name:'大觀峰眺望阿蘇',price:'免費',where:'阿蘇市（Day6）',day:'D6',desc:'海拔936m，360度全景眺望阿蘇五岳',emoji:'⛰️',img:'',imgKeyword:'大観峰 阿蘇 360度',done:false,custom:false},
+      {name:'狹霧台鳥瞰由布岳',price:'免費',where:'由布院縣道11號（Day4）',day:'D4',desc:'停車俯瞰由布院盆地，晴天可見火山倒映',emoji:'🏔️',img:'',imgKeyword:'狭霧台 由布院 由布岳',done:false,custom:false},
+      {name:'奈多宮海上鳥居',price:'免費',where:'杵築市奈多（Day3）',day:'D3',desc:'朱紅鳥居矗立海中，漲潮時最美',emoji:'🌊',img:'',imgKeyword:'奈多八幡宮 海の鳥居',done:false,custom:false},
+    ],
+    神社歷史:[
+      {name:'竈門神社花手水',price:'免費',where:'太宰府市（Day2）',day:'D2',desc:'花瓣漂浮的神聖手水缽，四季限定花藝裝置',emoji:'⛩️',img:'',imgKeyword:'竈門神社 花手水 太宰府',done:false,custom:false},
+      {name:'太宰府天滿宮',price:'免費',where:'太宰府市（Day2）',day:'D2',desc:'學問之神，全國受驗生聖地',emoji:'🎋',img:'',imgKeyword:'太宰府天満宮 本殿',done:false,custom:false},
+      {name:'熊本城天守閣',price:'¥800',where:'熊本市（Day6）',day:'D6',desc:'日本三大名城，震後重建感人故事',emoji:'🏯',img:'',imgKeyword:'熊本城 天守閣 復興',done:false,custom:false},
+      {name:'上色見熊野座神社',price:'免費',where:'高森町（Day7）',day:'D7',desc:'苔石階梯穿越古杉木林，宮崎動畫感',emoji:'🌲',img:'',imgKeyword:'上色見熊野座神社 石段 杉',done:false,custom:false},
+      {name:'阿蘇神社水基巡禮',price:'免費',where:'阿蘇市（Day7）',day:'D7',desc:'門前町湧泉巡禮，可直接飲用的天然清水',emoji:'💧',img:'',imgKeyword:'阿蘇神社 水基 湧水',done:false,custom:false},
+    ],
+    溫泉街:[
+      {name:'黑川溫泉街夜遊',price:'入湯手形¥1,500',where:'黑川溫泉（Day6）',day:'D6',desc:'穿浴衣漫步石板路，竹燈溫暖點亮',emoji:'♨️',img:'',imgKeyword:'黒川温泉 浴衣 温泉街 夜',done:false,custom:false},
+      {name:'由布院湯之坪街道',price:'免費',where:'由布院（Day4）',day:'D4',desc:'精品雜貨・咖啡廳・工藝品，充滿度假氛圍',emoji:'🏘️',img:'',imgKeyword:'由布院 湯の坪街道',done:false,custom:false},
+      {name:'別府湯煙展望台',price:'免費',where:'別府市鉄輪東（Day2）',day:'D2',desc:'高台俯瞰別府全市溫泉蒸氣瀰漫奇景',emoji:'🌫️',img:'',imgKeyword:'別府 湯けむり展望台',done:false,custom:false},
+    ],
+    城市夜景:[
+      {name:'舞鶴公園夜櫻點燈',price:'部分收費',where:'福岡市中央區（Day1）',day:'D1',desc:'4月初夜晚賞粉色花海，18:00–22:00點燈',emoji:'🌸',img:'',imgKeyword:'舞鶴公園 夜桜 ライトアップ',done:false,custom:false},
+      {name:'博多運河城水舞秀',price:'免費',where:'博多 Canal City',day:'D8',desc:'每小時整點音樂水舞表演，夜晚最壯觀',emoji:'🌈',img:'',imgKeyword:'キャナルシティ博多 噴水ショー',done:false,custom:false},
+      {name:'世界之塔夜景',price:'¥800',where:'別府（Day2）',day:'D2',desc:'100公尺玻璃展望台，黃昏日落與夜景一次收',emoji:'🗼',img:'',imgKeyword:'別府グローバルタワー 夜景',done:false,custom:false},
+      {name:'門司港復古夜景',price:'免費',where:'門司港レトロ（Day8）',day:'D8',desc:'明治大正時代建築夜間打燈，海景倒映浪漫',emoji:'🏙️',img:'',imgKeyword:'門司港レトロ 夜景',done:false,custom:false},
+    ],
+    自訂:[],
+  }
+};
+let mustData2 = JSON.parse(localStorage.getItem('kyushu_must_v5') || JSON.stringify(defaultMust2));
+function saveMust2(){ localStorage.setItem('kyushu_must_v5', JSON.stringify(mustData2)); }
+let curMustMain='buy', curMustSubs={buy:'名產',eat:'福岡',see:'自然絕景'};
 
-function switchMust(tab,btn){
-  curMustTab=tab;
-  document.querySelectorAll('.must-cat-panel').forEach(p=>p.style.display='none');
-  document.getElementById('must-'+tab).style.display='block';
-  document.querySelectorAll('.must-tab').forEach(b=>b.classList.remove('active'));
+function switchMainMust(tab,btn){
+  curMustMain=tab;
+  document.querySelectorAll('.must-page').forEach(p=>p.classList.remove('active'));
+  const pg=document.getElementById('mustpage-'+tab); if(pg)pg.classList.add('active');
+  document.querySelectorAll('.must-main-tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  renderMust(tab);
+  updateMustProgress();
+}
+function switchSub(main,sub,btn){
+  curMustSubs[main]=sub;
+  const page=document.getElementById('mustpage-'+main); if(!page) return;
+  page.querySelectorAll('.sub-panel').forEach(p=>p.classList.remove('active'));
+  page.querySelectorAll('.sub-tab').forEach(b=>b.classList.remove('active'));
+  const panel=document.getElementById(main+'-sub-'+sub); if(panel)panel.classList.add('active');
+  btn.classList.add('active');
+  renderMust2(main,sub);
+}
+const imgCache=JSON.parse(localStorage.getItem('kyushu_imgcache')||'{}');
+const imgPending=new Set();
+async function fetchItemImage(name,keyword,cardId){
+  if(imgCache[name]){applyImgToCard(cardId,imgCache[name]);return;}
+  if(imgPending.has(name))return;
+  imgPending.add(name);
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,tools:[{type:'web_search_20250305',name:'web_search'}],messages:[{role:'user',content:'Search for a real product photo of "'+keyword+'". Return ONLY one direct image URL ending in .jpg .jpeg .png or .webp. Nothing else.'}]})});
+    const data=await resp.json();
+    const text=(data.content||[]).map(c=>c.text||'').join('').trim();
+    const m=text.match(/https?:\/\/[^\s"'<>]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s"'<>]*)?/i);
+    if(m){imgCache[name]=m[0];localStorage.setItem('kyushu_imgcache',JSON.stringify(imgCache));applyImgToCard(cardId,m[0]);}
+  }catch(e){}
+  imgPending.delete(name);
+}
+function applyImgToCard(cardId,url){
+  const card=document.getElementById(cardId);if(!card)return;
+  const img=card.querySelector('.mimg'),ph=card.querySelector('.mimg-ph');
+  if(!img||!ph)return;
+  img.onload=()=>{img.style.display='block';ph.style.display='none';};
+  img.onerror=()=>{img.style.display='none';ph.style.display='flex';};
+  img.src=url;
+}
+function openEditImg(main,sub,i,cardId){
+  const item=(mustData2[main][sub]||[])[i];if(!item)return;
+  window._editCtx={main,sub,i,cardId,item};
+  document.getElementById('editImgModal').classList.add('open');
+  document.getElementById('editImgName').textContent=item.name;
+  const cached=imgCache[item.name]||item.img||'';
+  document.getElementById('editImgUrlIn').value=cached;
+  document.getElementById('editImgUrlIn').dataset.b64='';
+  const prev=document.getElementById('editImgPrev');
+  if(cached){const img2=document.createElement('img');img2.src=cached;img2.style.cssText='width:100%;height:110px;object-fit:cover;border-radius:8px;display:block;';img2.onerror=()=>{prev.innerHTML='<div style="height:110px;display:flex;align-items:center;justify-content:center;font-size:2.5em;background:#f5f5f5;border-radius:8px;">'+item.emoji+'</div>';};prev.innerHTML='';prev.appendChild(img2);}
+  else{prev.innerHTML='<div style="height:110px;display:flex;align-items:center;justify-content:center;font-size:2.5em;background:#f5f5f5;border-radius:8px;">'+item.emoji+'</div>';}
+}
+function previewEditUrl(){
+  const v=document.getElementById('editImgUrlIn').value.trim();if(!v)return;
+  document.getElementById('editImgUrlIn').dataset.b64='';
+  const prev=document.getElementById('editImgPrev');
+  const img2=document.createElement('img');img2.src=v;img2.style.cssText='width:100%;height:110px;object-fit:cover;border-radius:8px;display:block;';
+  img2.onerror=()=>{prev.innerHTML='<div style="padding:10px;color:#e74c3c;font-size:.8em;">圖片網址無效</div>';};
+  prev.innerHTML='';prev.appendChild(img2);
+}
+function handleEditFile(input){
+  if(!input.files||!input.files[0])return;
+  const r=new FileReader();
+  r.onload=e=>{document.getElementById('editImgUrlIn').dataset.b64=e.target.result;document.getElementById('editImgPrev').innerHTML='<img src="'+e.target.result+'" style="width:100%;height:110px;object-fit:cover;border-radius:8px;">';};
+  r.readAsDataURL(input.files[0]);
+}
+function applyEditImg(){
+  const ctx=window._editCtx;if(!ctx)return;
+  const b64=document.getElementById('editImgUrlIn').dataset.b64;
+  const url=b64||document.getElementById('editImgUrlIn').value.trim();
+  if(url){const item=mustData2[ctx.main][ctx.sub][ctx.i];imgCache[item.name]=url;item.img=url;localStorage.setItem('kyushu_imgcache',JSON.stringify(imgCache));saveMust2();applyImgToCard(ctx.cardId,url);}
+  closeModal('editImgModal');
+}
+function clearEditImg(){
+  const ctx=window._editCtx;if(!ctx)return;
+  const item=mustData2[ctx.main][ctx.sub][ctx.i];
+  delete imgCache[item.name];item.img='';localStorage.setItem('kyushu_imgcache',JSON.stringify(imgCache));saveMust2();
+  const card=document.getElementById(ctx.cardId);
+  if(card){const img2=card.querySelector('.mimg'),ph=card.querySelector('.mimg-ph');if(img2)img2.style.display='none';if(ph){ph.style.display='flex';ph.innerHTML='<div style="text-align:center"><div style="font-size:2.2em">'+item.emoji+'</div></div>';}}
+  closeModal('editImgModal');
+}
+function renderMust2(main,sub){
+  const items=mustData2[main][sub]||[];
+  const gridEl=document.getElementById('grid-'+main+'-'+sub);if(!gridEl)return;
+  gridEl.innerHTML='';
+  if(!items.length){gridEl.innerHTML='<div class="no-items" style="grid-column:1/-1;">尚無項目</div>';updateMustProgress();return;}
+  items.forEach((item,i)=>{
+    const cardId='mcard-'+main+'-'+sub+'-'+i;
+    const cached=imgCache[item.name]||item.img||'';
+    const card=document.createElement('div');
+    card.className='mcard'; card.id=cardId;
+    card.onclick=()=>toggleMust2(main,sub,i);
+    const img=document.createElement('img');
+    img.className='mimg'; img.alt=item.name;
+    if(cached){img.src=cached;}else{img.style.display='none';}
+    img.onerror=()=>{img.style.display='none';ph.style.display='flex';};
+    const ph=document.createElement('div');
+    ph.className='mimg-ph';
+    ph.style.display=cached?'none':'';
+    ph.innerHTML='<div style="text-align:center"><div style="font-size:2.2em">'+item.emoji+'</div><div style="font-size:.65em;color:#aaa;margin-top:3px">'+(cached?'':'載入中…')+'</div></div>';
+    const body=document.createElement('div'); body.className='mcard-body';
+    body.innerHTML='<div class="mname">'+item.name+'</div>'
+      +'<div class="mprice">'+(item.price||'')+'</div>'
+      +'<span class="where-badge">📍 '+item.where+'</span>'+(item.day?'<span class="day-badge">'+item.day+'</span>':'')
+      +'<div class="mdesc" style="margin-top:4px;">'+item.desc+'</div>';
+    const chk=document.createElement('div');
+    chk.className='mcheck'+(item.done?' done':'');
+    chk.textContent=item.done?'✓':'';
+    const editBtn=document.createElement('button');
+    editBtn.className='mimg-edit'; editBtn.textContent='✏️ 修改';
+    editBtn.onclick=(e)=>{e.stopPropagation();openEditImg(main,sub,i,cardId);};
+    card.appendChild(img); card.appendChild(ph); card.appendChild(body);
+    card.appendChild(chk); card.appendChild(editBtn);
+    if(item.custom){
+      const delBtn=document.createElement('button');
+      delBtn.className='mdel-btn show'; delBtn.textContent='✕';
+      delBtn.onclick=(e)=>{e.stopPropagation();delMust2(main,sub,i);};
+      card.appendChild(delBtn);
+    }
+    gridEl.appendChild(card);
+    if(!cached&&!item.img){
+      setTimeout(()=>fetchItemImage(item.name,item.imgKeyword||(item.name+' 日本'),cardId),i*500);
+    }
+  });
+  updateMustProgress();
 }
 
-function renderMust(tab){
-  const grid=document.getElementById(tab+'-grid');
-  grid.innerHTML=mustData[tab].map((item,i)=>`
-    <div class="must-card">
-      <div class="must-img-placeholder">${item.emoji}</div>
-      <div class="must-card-body">
-        <div class="must-name">${item.name}</div>
-        <div class="must-where">📍 ${item.where}</div>
-        <div class="must-desc">${item.desc}</div>
-      </div>
-      <div class="must-check${item.done?' done':''}" onclick="toggleMust('${tab}',${i})">${item.done?'✓':''}</div>
-      ${item.custom?`<button class="must-del" onclick="delMust('${tab}',${i})">✕</button>`:''}
-    </div>`).join('');
+function toggleMust2(main,sub,i){mustData2[main][sub][i].done=!mustData2[main][sub][i].done;saveMust2();renderMust2(main,sub);}
+function delMust2(main,sub,i){mustData2[main][sub].splice(i,1);saveMust2();renderMust2(main,sub);}
+function updateMustProgress(){
+  let tot=0,dn=0;
+  ['buy','eat','see'].forEach(m=>{Object.values(mustData2[m]).forEach(arr=>{tot+=arr.length;arr.forEach(it=>{if(it.done)dn++;});});});
+  const pct=tot?Math.round(dn/tot*100):0;
+  const fill=document.getElementById('mustProgressFill');if(fill)fill.style.width=pct+'%';
+  const txt=document.getElementById('mustProgressText');if(txt)txt.textContent='已完成 '+dn+' / '+tot+' 項（'+pct+'%）';
 }
-
-function toggleMust(tab,i){mustData[tab][i].done=!mustData[tab][i].done;saveMust();renderMust(tab);}
-function delMust(tab,i){mustData[tab].splice(i,1);saveMust();renderMust(tab);}
-
-function addMustItem(){
+function addMustItem2(){
   const name=document.getElementById('mustName').value.trim();
-  const tab=document.getElementById('mustCatSel').value;
+  const main=document.getElementById('mustMainCat').value;
   const where=document.getElementById('mustWhere').value.trim()||'九州';
   const price=document.getElementById('mustPrice').value.trim();
-  const desc=(document.getElementById('mustDesc').value.trim()||'自訂項目')+(price?' ・ '+price:'');
+  const desc=document.getElementById('mustDesc').value.trim()||'自訂項目';
   if(!name){alert('請填寫名稱');return;}
-  const emojis={'buy':'🛍️','eat':'🍽️','see':'📷'};
-  mustData[tab].push({name,where,desc,emoji:emojis[tab],done:false,custom:true});
-  saveMust();
+  const emojis={buy:'🛍️',eat:'🍽️',see:'📷'};
+  mustData2[main]['自訂'].push({name,price:price||'',where,day:'',desc,emoji:emojis[main],img:'',imgKeyword:name+' '+where,done:false,custom:true});
   document.getElementById('mustName').value='';
   document.getElementById('mustWhere').value='';
   document.getElementById('mustPrice').value='';
   document.getElementById('mustDesc').value='';
-  document.getElementById('mustCatSel').value=tab;
-  // Switch to that tab
-  const tabBtns=document.querySelectorAll('.must-tab');
-  const tabIdx={'buy':0,'eat':1,'see':2};
-  switchMust(tab,tabBtns[tabIdx[tab]]);
+  saveMust2();
+  const subs={buy:'自訂',eat:'自訂',see:'自訂'};
+  const page=document.getElementById('mustpage-'+main);
+  if(page) page.querySelectorAll('.sub-tab').forEach(b=>{if(b.textContent.includes('我的清單'))switchSub(main,'自訂',b);});
+}
+function initMustList(){
+  const subs={buy:['名產','保健','化妝','生活','自訂'],eat:['福岡','別府大分','由布院','熊本阿蘇','自訂'],see:['自然絕景','神社歷史','溫泉街','城市夜景','自訂']};
+  ['buy','eat','see'].forEach(m=>subs[m].forEach(s=>renderMust2(m,s)));
+  updateMustProgress();
 }
 
-// ════════════════════════════════════════════
-// MAP PAGE – QUICK LINKS
-// ════════════════════════════════════════════
-const quickLinks=[
-  {name:'福岡機場',q:'福岡空港'},{name:'博多站',q:'博多駅'},{name:'太宰府',q:'太宰府天満宮'},
-  {name:'別府地獄',q:'海地獄 別府市'},{name:'由布院金鱗湖',q:'金鱗湖 由布院'},
-  {name:'熊本城',q:'熊本城'},{name:'黑川溫泉',q:'黒川温泉'},{name:'阿蘇草千里',q:'草千里ヶ浜'},
-  {name:'上色見神社',q:'上色見熊野座神社'},{name:'門司港',q:'門司港レトロ'},
-  {name:'界 阿蘇',q:'星野リゾート 界阿蘇'},{name:'大觀峰',q:'大観峰 阿蘇市'},
-];
 function _initQuickLinks(){
   const c=document.getElementById('quickMapLinks');
   if(c)c.innerHTML=quickLinks.map(l=>`<button class="map-link" onclick="window.open('https://maps.google.com/?q='+encodeURIComponent('${l.q}'),'_blank')" style="background:#e8f4fd;border:none;cursor:pointer;">📍 ${l.name}</button>`).join('');
@@ -2142,7 +2345,8 @@ function clearHistory(){transHistory=[];localStorage.setItem('kyushu_hist_v4','[
 // (INIT ALL moved to DOMContentLoaded below)
 
 
-// SOUVENIR JS - loaded from part3 baseline, updated with edit+currency featuresfunction saveSV(p){ localStorage.setItem('kyushu_sv_'+p, JSON.stringify(svData[p])); }
+// SOUVENIR JS - loaded from part3 baseline, updated with edit+currency features
+function saveSV(p){ localStorage.setItem('kyushu_sv_'+p, JSON.stringify(svData[p])); }
 function svRate(curr) {
   const jpy = parseFloat((document.getElementById('sv-rate-jpy')||{value:'0.217'}).value) || 0.217;
   const krw = parseFloat((document.getElementById('sv-rate-krw')||{value:'0.023'}).value) || 0.023;
